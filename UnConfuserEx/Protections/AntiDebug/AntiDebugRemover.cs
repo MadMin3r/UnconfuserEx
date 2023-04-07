@@ -12,38 +12,89 @@ namespace UnConfuserEx.Protections.AntiDebug
     {
         public string Name => "AntiDebug";
 
-        private bool ModuleCctorHasAntiDump = false;
-        private List<MethodDef> AntiDebugMethods = new();
+        private enum AntiDebugType
+        {
+            Safe,
+            Win32,
+            Antinet
+        };
 
+        MethodDef? antiDebugMethod;
+        AntiDebugType? antiDebugType;
 
         public bool IsPresent(ref ModuleDefMD module)
         {
-            if (module.GlobalType.FindStaticConstructor() is MethodDef cctor &&
-                cctor.HasBody)
-            {
-                var instrs = cctor.Body.Instructions;
+            var cctor = module.GlobalType.FindStaticConstructor();
 
-                ModuleCctorHasAntiDump = instrs[0].OpCode == OpCodes.Ldtoken &&
-                                          (TypeDef)instrs[0].Operand == module.GlobalType &&
-                                          instrs[5].OpCode == OpCodes.Call &&
-                                          ((IMethodDefOrRef)instrs[5].Operand).Name == "GetHINSTANCE";
+            if (cctor == null || !(cctor.HasBody))
+                return false;
+
+            IList<Instruction> instrs;
+
+            // Check the first call in the cctor
+            if (cctor.Body.Instructions[0].OpCode == OpCodes.Call)
+            {
+                var method = cctor.Body.Instructions[0].Operand as MethodDef;
+
+                instrs = method!.Body.Instructions;
+
+                for (int i = 0; i < instrs.Count; i++)
+                {
+
+                    // Check for safe AntiDebug
+                    if (instrs[i].OpCode == OpCodes.Ldstr &&
+                        instrs[i].Operand is String str1 &&
+                        str1 == "COR_ENABLE_PROFILING") 
+                    {
+                        antiDebugMethod = method;
+                        antiDebugType = AntiDebugType.Safe;
+                        return true;
+                    }
+                    // Check for win32 AntiDebug
+                    else if (instrs[i].OpCode == OpCodes.Ldstr &&
+                        instrs[i].Operand is String str2 &&
+                        str2 == "_ENABLE_PROFILING")
+                    {
+                        antiDebugMethod = method;
+                        antiDebugType = AntiDebugType.Win32;
+                        return true;
+                    }
+                    // Check for antinet AntiDebug
+                    else if (instrs[i].OpCode == OpCodes.Ldnull &&
+                        instrs[i + 1].OpCode == OpCodes.Call &&
+                        instrs[i + 1].Operand is MemberRef m &&
+                        m.Name == "FailFast")
+                    {
+                        antiDebugMethod = method;
+                        antiDebugType = AntiDebugType.Antinet;
+                        return true;
+                    }
+                }
 
             }
 
-            return ModuleCctorHasAntiDump;
+            return false;
         }
 
         public bool Remove(ref ModuleDefMD module)
         {
-            if (ModuleCctorHasAntiDump)
-            {
-                var cctor = module.GlobalType.FindStaticConstructor() as MethodDef;
+            var cctor = module.GlobalType.FindStaticConstructor()!;
 
-                cctor.Body.Instructions.Clear();
-                cctor.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+            // TODO: Could spend some effort to clean up all the other junk that gets injected
+            // but this removes the AntiDebug so...
+
+            // At the moment all of the AntiDebug can be removed this easily. Will keep the switch
+            // here in case this is changed in the future.
+            switch (antiDebugType)
+            {
+                case AntiDebugType.Safe:
+                case AntiDebugType.Win32:
+                case AntiDebugType.Antinet:
+                    cctor.Body.Instructions.RemoveAt(0);
+                    return true;
             }
 
-            return true;
+            return false;
         }
     }
 }

@@ -3,15 +3,12 @@ using System.IO;
 using dnlib.DotNet;
 using dnlib.DotNet.Writer;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 using UnConfuserEx.Protections;
 using log4net;
 using log4net.Config;
 using UnConfuserEx.Protections.Delegates;
 using UnConfuserEx.Protections.AntiDebug;
+using UnConfuserEx.Protections.AntiDump;
 
 namespace UnConfuserEx
 {
@@ -49,8 +46,10 @@ namespace UnConfuserEx
                 new ResourcesRemover(),
                 new ConstantsRemover(),
                 new RefProxyRemover(),
-                new UnicodeRemover(),
+                new AntiDumpRemover(),
                 new AntiDebugRemover(),
+                new UnicodeRemover(),
+
             };
 
             foreach (var p in pipeline)
@@ -99,7 +98,7 @@ namespace UnConfuserEx
                 else
                 {
                     NativeModuleWriterOptions writerOptions = new NativeModuleWriterOptions(module, true);
-                    writerOptions.MetadataOptions.Flags = MetadataFlags.PreserveAll;
+                    //writerOptions.MetadataOptions.Flags = MetadataFlags.PreserveAll;
                     module.NativeWrite(newPath, writerOptions);
                 }
             }
