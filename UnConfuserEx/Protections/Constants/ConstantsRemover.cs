@@ -143,13 +143,14 @@ namespace UnConfuserEx.Protections
                 resolver.Resolve(getter, instances.ToList());
 
                 Logger.Debug($"Removed all instances of getter ${getter.FullName}");
-                //module.GlobalType.Remove(getter);
             }
 
             module.GlobalType.Fields.Remove(dataField);
 
+            var cctor = module.GlobalType.FindStaticConstructor();
+
             // Delete the encrypted data and decryption instructions
-            if (initializeMethod == module.GlobalType.FindStaticConstructor())
+            if (initializeMethod == cctor)
             {
                 for (int i = 0; i < initializeMethod.Body.Instructions.Count; i++)
                 {
@@ -168,7 +169,9 @@ namespace UnConfuserEx.Protections
             }
             else
             {
-                throw new NotImplementedException("Constants decryption not done in the static constructor!");
+                cctor.Body.Instructions.RemoveAt(0);
+                initializeMethod.Body.Instructions.Clear();
+                initializeMethod.Body.Instructions.Add(new Instruction(OpCodes.Ret));
             }
             return true;
         }

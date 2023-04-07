@@ -12,6 +12,7 @@ using UnConfuserEx.Protections;
 using System.IO;
 using UnConfuserEx.Protections.AntiTamper;
 using log4net;
+using de4dot.blocks;
 
 namespace UnConfuserEx.Protections
 {
@@ -198,17 +199,15 @@ namespace UnConfuserEx.Protections
                 return (null, null);
             }
 
-            int derivationLength = (lastInstr - firstInstr);
-
             List<Instruction> derivation = new();
-            for (int i = 0; i <= derivationLength; i++)
+            for (int i = 0; i <= (lastInstr - firstInstr); i++)
             {
                 derivation.Add(instrs[firstInstr + i]);
             }
 
             // Normal deriver is 16 iterations of 10 instructions
             const int normalDeriationLength = 16 * 10;
-            DeriverType type = (derivationLength == normalDeriationLength) ? DeriverType.Normal : DeriverType.Dynamic;
+            DeriverType type = (derivation.Count == normalDeriationLength) ? DeriverType.Normal : DeriverType.Dynamic;
             return (type, derivation);
         }
 
@@ -216,18 +215,30 @@ namespace UnConfuserEx.Protections
         {
             var cctor = module.GlobalType.FindStaticConstructor();
 
-            if (cctor == null || !(cctor.HasBody) || cctor.Body.Instructions[0].OpCode != OpCodes.Call)
+            if (cctor == null || !(cctor.HasBody))
                 return null;
 
-            var method = cctor.Body.Instructions[0].Operand as MethodDef;
+            IList<Instruction> instrs;
 
-            foreach (var instr in method!.Body.Instructions)
+            // Check the first call in the cctor first
+            if (cctor.Body.Instructions[0].OpCode == OpCodes.Call)
             {
-                if (instr.Operand != null && instr.Operand.ToString()!.Contains("Marshal::GetHINSTANCE"))
+                var method = cctor.Body.Instructions[0].Operand as MethodDef;
+
+                instrs = method!.Body.Instructions;
+                for (int i = 0; i < instrs.Count - 2; i++)
                 {
-                    return method;
+                    if (instrs[i].OpCode == OpCodes.Ldtoken &&
+                        instrs[i].Operand == module.GlobalType &&
+                        instrs[i + 1].OpCode == OpCodes.Call &&
+                        instrs[i + 1].Operand is MemberRef m &&
+                        m.Name == "GetTypeFromHandle")
+                    {
+                        return method;
+                    }
                 }
             }
+
             return null;
         }
 

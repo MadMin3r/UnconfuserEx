@@ -3,6 +3,7 @@ using dnlib.DotNet.Emit;
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 using X86Emulator;
 
 namespace UnConfuserEx.Protections.Constants
@@ -12,46 +13,69 @@ namespace UnConfuserEx.Protections.Constants
         private static ILog Logger = LogManager.GetLogger("Constants");
 
         private ModuleDefMD Module;
-        private byte[] Data;
 
         public X86Resolver(ModuleDefMD module, byte[] data)
         {
             Module = module;
-            Data = data;
+            this.data = data;
         }
 
-        public void Resolve(MethodDef getter, IList<MethodDef> instances)
+        public override void Resolve(MethodDef getter, IList<MethodDef> instances)
         {
             var x86MethodDef = (MethodDef)getter.Body.Instructions[5].Operand;
-
             var x86Method = new X86Method(Module, x86MethodDef);
+
+            var (stringId, numId, objectId) = GetIdsFromGetter(getter);
+
 
             foreach (var method in instances)
             {
-                int id = -1;
-                TypeSig? genericType = null;
-                var instrs = method.Body.Instructions;
-                for (int i = 0; i < instrs.Count; i++)
+                if (ConstantsCFG.IsCFGPresent(method))
                 {
-                    if (instrs[i].OpCode == OpCodes.Call
-                        && instrs[i].Operand is MethodSpec m
-                        && m.Method.ResolveMethodDef().Equals(getter))
-                    {
-                        id = (int)instrs[i - 1].Operand;
-                        genericType = m.GenericInstMethodSig.GenericArguments[0];
-                        break;
-                    }
+                    new ConstantsCFG(method).RemoveFromMethod();
                 }
 
-                if (id == -1)
-                    throw new Exception("Failed to get ID for constant decryption");
+                TypeSig? genericType;
+                int instanceOffset = GetNextInstanceInMethod(getter, method, out genericType);
+
+                while (instanceOffset != -1)
+                {
+                    var instrs = method.Body.Instructions;
+
+                    var id = instrs[instanceOffset].GetLdcI4Value();
+                    id = x86Method.Emulate(new int[] { id });
+                    int type = (int)((uint)id >> 0x1e);
+                    id = (id & 0x3fffffff) << 2;
+
+                    try
+                    {
+                        if (type == stringId)
+                        {
+                            FixStringConstant(method, instanceOffset, id);
+                        }
+                        else if (type == numId)
+                        {
+                            FixNumberConstant(method, instanceOffset, id, genericType!);
+                        }
+                        else if (type == objectId)
+                        {
+                            FixObjectConstant(method, instanceOffset, id, genericType!);
+                        }
+                        else
+                        {
+                            FixDefaultConstant(method, instanceOffset, genericType!);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to remove constants obfuscation from method ${method.FullName} ({ex.Message})");
+                        return;
+                    }
 
 
-                id = x86Method.Emulate(new int[] { id });
-                var type = (int)((uint)id >> 0x1E);
-                id = (id & 0x3FFFFFFF) << 2;
+                    instanceOffset = GetNextInstanceInMethod(getter, method, out genericType);
+                }
 
-                Logger.Debug($"X86 Constant getter:\n\tid: {id}\n\ttype: {type}\n\tgenericType: {genericType}");
             }
         }
 
