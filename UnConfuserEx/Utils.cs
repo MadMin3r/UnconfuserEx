@@ -52,5 +52,29 @@ namespace UnConfuserEx
             return Encoding.UTF8.GetByteCount(name) != name.Length
                     || (name.Any(c => InvalidChars.Contains(c)));
         }
+
+        public static int GetStoreLocalIndex(Instruction instr)
+        {
+            if (instr.OpCode == OpCodes.Stloc_S || instr.OpCode == OpCodes.Stloc)
+            {
+                return ((Local)instr.Operand).Index;
+            }
+            else
+            {
+                return instr.OpCode.Code - Code.Stloc_0;
+            }
+        }
+
+        public static int GetLoadLocalIndex(Instruction instr)
+        {
+            if (instr.OpCode == OpCodes.Ldloc_S || instr.OpCode == OpCodes.Ldloc)
+            {
+                return ((Local)instr.Operand).Index;
+            }
+            else
+            {
+                return instr.OpCode.Code - Code.Ldloc_0;
+            }
+        }
     }
 }

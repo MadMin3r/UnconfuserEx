@@ -3,6 +3,7 @@ using de4dot.blocks.cflow;
 using dnlib.DotNet;
 using dnlib.DotNet.Emit;
 using log4net;
+using MSILEmulator;
 using System.Collections.Generic;
 using System.Linq;
 using X86Emulator;
@@ -21,6 +22,9 @@ namespace UnConfuserEx.Protections.ControlFlow
 
         private int methodOffset = -1;
         private X86Method? x86Method = null;
+
+        private ILMethod? ilMethod = null;
+        private int? keyIndex = null;
 
         public SwitchDeobfuscator(ModuleDefMD module)
         {
@@ -68,6 +72,16 @@ namespace UnConfuserEx.Protections.ControlFlow
                         methodOffset = i - 5;
                         x86Method = new X86Method(Module, (MethodDef)instrs[i - 5].Operand);
                     }
+                    else if (!switchBlock.FirstInstr.Instruction.IsLdcI4())
+                    {
+                        var decodeInstrsLength = switchBlock.Instructions.Count - 6;
+
+                        ilMethod = new ILMethod(switchBlock.Instructions
+                            .Skip(1)
+                            .Take(decodeInstrsLength)
+                            .Select(instr => instr.Instruction));
+                        keyIndex = Utils.GetStoreLocalIndex(switchBlock.FirstInstr.Instruction);
+                    }
 
                     return true;
                 }
@@ -95,9 +109,12 @@ namespace UnConfuserEx.Protections.ControlFlow
             {
                 modified = false;
 
-                // Sometimes de4dot doesn't split the ldc.i4 going into the switchblock
-                // so we need to handle that in a special case
-                if (switchBlock!.FirstInstr.IsLdcI4())
+                
+                // Sometimes with the x86 predicate, the ldc.i4 going into the switch block
+                // doesn't get split into a separate block which can cause issues
+
+                // TODO: Not entirely convinced this solution won't cause issues...
+                if (x86Method != null && switchBlock!.FirstInstr.IsLdcI4())
                 {
                     var key = switchBlock.FirstInstr.GetLdcI4Value();
                     var (nextKey, nextCase) = GetNextKeyAndCase(key);
@@ -218,15 +235,25 @@ namespace UnConfuserEx.Protections.ControlFlow
 
         private (int nextKey, int nextCase) GetNextKeyAndCase(int key)
         {
-            if (x86Method == null)
+            // x86 predicate
+            if (x86Method != null)
+            {
+                var nextKey = x86Method.Emulate(new int[] { key });
+                return (nextKey, nextKey % switchCases.Count);
+            }
+            // Expression Predicate
+            else if (ilMethod != null)
+            {
+                ilMethod.SetLocal((int)keyIndex!, key);
+
+                var nextKey = (int)ilMethod.Emulate().Stack.Pop();
+                return (nextKey, nextKey % switchCases.Count);
+            }
+            // Normal predicate
+            else
             {
                 var xorKey = switchBlock!.FirstInstr.GetLdcI4Value();
                 var nextKey = key ^ xorKey;
-                return (nextKey, nextKey % switchCases.Count);
-            }
-            else
-            {
-                var nextKey = x86Method.Emulate(new int[] { key });
                 return (nextKey, nextKey % switchCases.Count);
             }
         }

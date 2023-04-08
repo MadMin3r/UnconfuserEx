@@ -30,7 +30,7 @@ namespace MSILEmulator
             Ctx = new();
         }
 
-        public ILMethod(IList<Instruction> instructions)
+        public ILMethod(IEnumerable<Instruction> instructions)
         {
             Method = null;
             Instructions = instructions.ToList();
@@ -45,11 +45,6 @@ namespace MSILEmulator
         public void SetLocal(int index, object value)
         {
             Ctx.Locals[index] = value;
-        }
-
-        public void Reset()
-        {
-            Ctx = new();
         }
 
         public Context Emulate()

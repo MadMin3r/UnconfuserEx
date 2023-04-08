@@ -105,6 +105,11 @@ namespace UnConfuserEx.Protections
 
         public static bool IsSwitchObfuscation(List<Instruction> instrs)
         {
+            if (instrs.Count < 3)
+            {
+                return false;
+            }
+
             for (int i = 0; i < instrs.Count; i++)
             {
                 if (instrs[i].OpCode == OpCodes.Switch

@@ -26,14 +26,9 @@ namespace UnConfuserEx.Protections.Constants
             {
                 if (decryptInstructions[i + 2].OpCode == OpCodes.Ldelem_U4)
                 {
-                    if (decryptInstructions[i].OpCode == OpCodes.Ldloc_S)
+                    if (decryptInstructions[i].IsLdloc())
                     {
-                        arrays.Add(((Local)decryptInstructions[i].Operand).Index);
-                    }
-                    else if (decryptInstructions[i].OpCode.Value >= OpCodes.Ldloc_0.Value
-                             && decryptInstructions[i].OpCode.Value <= OpCodes.Ldloc_3.Value)
-                    {
-                        arrays.Add(decryptInstructions[i].OpCode.Value - OpCodes.Ldloc_0.Value);
+                        arrays.Add(Utils.GetLoadLocalIndex(decryptInstructions[i]));
                     }
                 }
             }
