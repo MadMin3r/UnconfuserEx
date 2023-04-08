@@ -43,8 +43,8 @@ namespace UnConfuserEx
                 new AntiTamperRemover(),
 
                 new ControlFlowRemover(),
-                new ResourcesRemover(),
                 new ConstantsRemover(),
+                new ResourcesRemover(),
                 new RefProxyRemover(),
                 new AntiDumpRemover(),
                 new AntiDebugRemover(),
