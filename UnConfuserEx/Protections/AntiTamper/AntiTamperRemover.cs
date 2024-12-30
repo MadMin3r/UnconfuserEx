@@ -215,7 +215,7 @@ namespace UnConfuserEx.Protections
         {
             var cctor = module.GlobalType.FindStaticConstructor();
 
-            if (cctor == null || !(cctor.HasBody))
+            if (cctor == null || !(cctor.HasBody) || cctor.Body.Instructions.Count == 0)
                 return null;
 
             IList<Instruction> instrs;

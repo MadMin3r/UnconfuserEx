@@ -100,7 +100,6 @@ namespace UnConfuserEx
                 else
                 {
                     NativeModuleWriterOptions writerOptions = new NativeModuleWriterOptions(module, true);
-                    //writerOptions.MetadataOptions.Flags = MetadataFlags.PreserveAll;
                     module.NativeWrite(newPath, writerOptions);
                 }
             }

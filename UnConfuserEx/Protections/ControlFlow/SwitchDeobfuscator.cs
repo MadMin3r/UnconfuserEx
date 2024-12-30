@@ -145,6 +145,7 @@ namespace UnConfuserEx.Protections.ControlFlow
                         processedCount++;
                     }
                     else if (block.Instructions.Count >= 5 &&
+                             block.Instructions[^1].OpCode == OpCodes.Xor &&
                              block.Instructions[^2].IsLdcI4() &&
                              block.Instructions[^4].IsLdcI4())
                     {
