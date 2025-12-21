@@ -3,7 +3,6 @@ using dnlib.DotNet.Emit;
 using log4net;
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using X86Emulator;
 
 namespace UnConfuserEx.Protections.Constants
