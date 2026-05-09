@@ -19,6 +19,7 @@ Most common protections are removed by UnconfuserEx, but I haven't exhaustively 
     - [x] Win32
     - [x] Antinet
 - [x] Anti-Dump
+
 - [?] Anti-Tamper
     - [x] Normal
     - [-] Anti (Same as normal just with debugger checks - could be done easily)
