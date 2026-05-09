@@ -14,13 +14,12 @@ All that needs to be specified is the target binary. If no output is specified, 
 ## Protections
 Most common protections are removed by UnconfuserEx, but I haven't exhaustively tested permutations of the protections removed by it. YMMV.
 
+- [x] Anti-Dump
 - [x] Anti-Debug
     - [x] Safe
     - [x] Win32
     - [x] Antinet
-- [x] Anti-Dump
-
-- [?] Anti-Tamper
+- [-] Anti-Tamper
     - [x] Normal
     - [-] Anti (Same as normal just with debugger checks - could be done easily)
     - [-] JIT (Never looked at this one)
