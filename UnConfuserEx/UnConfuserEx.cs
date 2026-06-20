@@ -18,7 +18,7 @@ namespace UnConfuserEx
 
         static int Main(string[] args)
         {
-            XmlConfigurator.Configure(typeof(UnConfuserEx).Assembly.GetManifestResourceStream("UnConfuserEx.log4net.xml"));
+            XmlConfigurator.Configure(typeof(UnConfuserEx).Assembly.GetManifestResourceStream("UnConfuserEx.log4net.xml")!);
 
             if (args.Length < 1 || args.Length > 2)
             {

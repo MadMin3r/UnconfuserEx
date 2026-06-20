@@ -1,15 +1,13 @@
 # UnConfuserEx
 A tool for deobfuscating C# binaries protected with ConfuserEx2.
 
-This was originally a private project that I decided to make public after it had no real use to me anymore. The removal of protections was very focused on one specific binary I was reversing so it's fairly likely things will break. Removers are all added to a "pipeline" so if there's some custom protection you need removing, it should be fairly straightforward to add it.
-
- If something does break, either fix it yourself, or raise an issue. Since this code was never meant to see the light of day, it is pretty (read: extremely) poor. I don't like looking at it, so I simply do not look at it any more (Although, I do occasionally feel like fixing some nasty bugs when I'm bored).
+This was originally a private project that I decided to make public after it had no real use to me anymore. The removal of protections was focused on one specific binary I was reversing and they seemed to be using a slightly modified version of ConfuserEx, so it's possible that some things will be broken.
 
 ## Usage
 
 UnConfuserEx.exe <obfuscated_target> <optional: deobfuscated_output>
 
-All that needs to be specified is the target binary. If no output is specified, the output will be named "obfuscated_target-deobfuscated"
+If no output path is specified, the deobfuscated output will be in the same directory as the target with the "-deobfuscated" suffix applied.
 
 ## Protections
 Most common protections are removed by UnconfuserEx, but I haven't exhaustively tested permutations of the protections removed by it. YMMV.
@@ -34,7 +32,7 @@ Most common protections are removed by UnconfuserEx, but I haven't exhaustively 
     - [x] Switch
     - [ ] Jump (I've never seen a Jump-obfuscated binary so :shrug:)
 - [ ] Reference Proxy
-    - [x] Normal
+    - [ ] Normal
     - [ ] Dynamic (expression) (This might be removed as well? Never tested)
     - [x] x86
 - [x] Renamer (All non-ASCII names are replaced with a generic (Type)No to improve readability)
@@ -45,14 +43,7 @@ Most common protections are removed by UnconfuserEx, but I haven't exhaustively 
 There may be more that I've missed.
 
 ## Issues
-If you run into a consistent error trying to deobfuscate a binary and feel like raising an issue, please follow these steps:
-
-1. Remove file extensions from files (I will never execute anything sent to me anyway, it's just a bit of courtesy y'know :) )
-2. Zip/rar/7zip/whatever everything up
-3. Create an issue with the console output from the failed deobfuscation, and a link to download the above archive. If you've done any investigation into the issue, please do share your findings as well, even if you don't think they'd be useful; you'd be surprised.
-4. Pray that I eventually look at it and fix it.
+If you run into a consistent error trying to deobfuscate a binary, upload the binary to any file sharing site and raise an issue with a link to the file, as well as the console output.
 
 ## Contributing
-All contributions are welcome, make a pull request and I'll eventually get around to looking at it (if you think it's especially important, find a way to spam me on something because I rarely look at this repo).
-
-No specific requirements for contributions either, just don't be a fool.
+All contributions are welcome, make a pull request and I'll try to respond in a reasonable amount of time.
